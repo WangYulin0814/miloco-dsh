@@ -2,6 +2,7 @@
 # 通过 api.github.com 资产接口下载 install.sh(绕过不可达的 github.com 主站)
 set -u
 cd /tmp
+WS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)"
 echo "== 取资产 ID"
 curl -4 -sS --max-time 30 -H "Accept: application/vnd.github+json" \
   "https://api.github.com/repos/XiaoMi/xiaomi-miloco/releases/latest" \

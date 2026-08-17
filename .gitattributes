@@ -1,0 +1,5 @@
+# 换行符规范化
+* text=auto
+
+# shell 脚本在 WSL/Linux 执行,强制 LF(Windows 检出也不转 CRLF)
+*.sh text eol=lf

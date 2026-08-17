@@ -6,7 +6,7 @@ set -u
 NAME="miloco-linux-x86_64-2026.8.6.tar.gz"
 TAG="v2026.8.6"
 SHA="18a068829e08341dc096ca6b13f9df2ecf8e156c2cb5a88c403628fc091ce504"
-WS="/mnt/c/Project Library/DeepSeek Harness WorkSpace/miloco-dsh"
+WS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)"
 INSTALL_SH="$WS/upstream/install.sh.release"
 BUNDLE_WS="$WS/upstream/$NAME"
 

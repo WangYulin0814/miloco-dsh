@@ -9,23 +9,56 @@
 
 ```
 miloco-dsh/
+├── install.ps1              # ★ Windows 一句话安装器(irm ... | iex)
+├── install.sh               # ★ Linux/macOS 一句话安装器(curl ... | bash)
 ├── server/
-│   ├── miloco-mcp.js     # ★ 核心:MCP stdio 服务器(零依赖、单文件、纯 Node 标准库)
-│   ├── mock-backend.js   # 测试用 Miloco 后端模拟器
-│   ├── test-mcp.js       # 协议冒烟测试(自制客户端)
-│   ├── test-full.js      # 端到端测试(mock 后端 + 22 项断言)
-│   └── test-sdk.mjs      # 官方 @modelcontextprotocol/sdk v1.30 兼容性测试
+│   ├── miloco-mcp.js        # ★ 核心:MCP stdio 服务器(零依赖、单文件、纯 Node 标准库)
+│   ├── mock-backend.js      # 测试用 Miloco 后端模拟器
+│   ├── test-mcp.js          # 协议冒烟测试(自制客户端)
+│   ├── test-full.js         # 端到端测试(mock 后端 + 22 项断言)
+│   └── test-sdk.mjs         # 官方 @modelcontextprotocol/sdk v1.30 兼容性测试
+├── scripts/
+│   ├── merge-patch.js       # cordis.patch.yml 幂等合并(备份+标记块+旧条目迁移)
+│   └── wsl-*.sh             # WSL 内安装/重启/诊断 Miloco 后端的脚本
 ├── dsh-integration/
-│   └── cordis.patch.miloco.yml   # DSH web profile 的 patch 片段(已应用到本机)
-├── skills/miloco/        # DSH 技能(已安装到 $DSH_HOME/skills/miloco)
-├── docs/
-│   ├── DESIGN.md         # 设计文档(架构/工具面/契约)
-│   ├── UPSTREAM-NOTES.md # 上游仓库安全审查笔记
-│   └── README.md         # 本文件
-└── upstream/             # 上游关键源码参考(路由/契约,来自 XiaoMi/xiaomi-miloco)
+│   └── cordis.patch.miloco.yml   # patch 片段模板(安装器按此生成正式条目)
+├── skills/miloco/           # DSH 技能(agent 工作流与安全纪律)
+└── docs/
+    ├── DESIGN.md            # 设计文档(架构/工具面/契约)
+    ├── UPSTREAM-NOTES.md    # 上游仓库安全审查笔记
+    └── README.md            # 本文件
 ```
 
-## 快速开始
+## 快速开始(推荐:一句话安装)
+
+> 前提:已安装 DeepSeek Harness(自带 node),Miloco 后端已跑在 `127.0.0.1:1810`。
+
+**Windows:**
+
+```powershell
+irm https://raw.githubusercontent.com/WangYulin0814/miloco-dsh/main/install.ps1 | iex
+```
+
+**Linux / macOS:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/WangYulin0814/miloco-dsh/main/install.sh | bash
+```
+
+安装器会:下载/更新仓库 → 合并 `mcp-miloco` 条目到
+`$DSH_HOME/profiles/web/cordis.patch.yml`(自动备份)→ 安装技能 →
+自动发现 token → 冒烟验证。全部幂等,可重复执行。
+
+最后**重启 `dsh web`**,模型即获得 18 个 `mcp__miloco__*` 工具:
+
+```
+home_overview · device_list · device_status · device_spec · device_control
+scene_trigger · refresh_devices · account_status · account_bind · account_authorize
+account_unbind · events_recent · event_media_url · camera_list · rules_list
+system_status · notify_send · omni_config
+```
+
+## 手动安装(不推荐,仅作参考/排查)
 
 ### 1. 后端(Miloco 本体)
 
@@ -42,35 +75,39 @@ curl -LsSf https://github.com/XiaoMi/xiaomi-miloco/releases/latest/download/inst
 - 首次使用:配置模型(MiMo API Key)→ 绑定小米账号 → 打开摄像头感知
 - 验证:`miloco-cli service status`
 
-### 2. 适配层(本仓库,已就绪)
+### 2. 适配层(手动)
 
-本机已完成:
-- ✅ `miloco-mcp` 服务器(经 22 项端到端断言 + 官方 SDK 兼容测试 + 真后端实测全通过)
-- ✅ `$DSH_HOME/profiles/web/cordis.patch.yml` 已追加 `mcp-miloco` 实例
-- ✅ `$DSH_HOME/skills/miloco/` 技能已安装(已在本会话生效)
+1. 把 `dsh-integration/cordis.patch.miloco.yml` 的标记块追加到
+   `$DSH_HOME/profiles/web/cordis.patch.yml`(把 `<MILOCO_DSH_DIR>` 换成本仓库目录);
+2. 把 `skills/miloco/` 复制到 `$DSH_HOME/skills/miloco/`;
+3. 设置环境变量 `MILOCO_TOKEN`(后端 `config.json` 的 `server.token`);
+4. 重启 `dsh web`。
 
-### 3. 激活(唯一待做)
+## 配置
 
-**重启 DSH 的 web profile**(`dsh web` 重启 / 退出 `DeepSeek Harness.exe` 后重新打开)。
-重启后模型即获得 `mcp__miloco__*` 工具,共 18 个:
+`miloco-mcp` 通过环境变量配置(安装器会在 cordis patch 的 `env` 段与系统环境变量中处理):
 
-```
-home_overview · device_list · device_status · device_spec · device_control
-scene_trigger · refresh_devices · account_status · account_bind · account_authorize
-account_unbind · events_recent · event_media_url · camera_list · rules_list
-system_status · notify_send · omni_config
-```
+| 变量 | 默认 | 说明 |
+|---|---|---|
+| `MILOCO_BASE_URL` | `http://127.0.0.1:1810` | 后端地址;WSL 场景 localhost 自动转发,跨机改成 `http://<host>:1810` |
+| `MILOCO_TOKEN` | 自动发现 | 后端 Bearer token(见下) |
+| `MILOCO_HOME` | 依次探测 | config.json 所在目录(可指向 `\\wsl.localhost\<发行版>\home\<用户>\.miloco`) |
+| `MILOCO_TIMEOUT_MS` | `30000` | 单次 HTTP 超时 |
 
-## 本机部署状态(2026-08-17)
+**token 获取**(任一方式):
+1. 由安装器自动发现(本机 `~/.miloco/config.json` 或 WSL 内后端)并写入环境变量;
+2. 或手动设置环境变量 `MILOCO_TOKEN` = 后端 `~/.miloco/config.json` 里的 `server.token`;
+3. 或设置 `MILOCO_HOME` 指向实际配置目录(含 WSL 的 UNC 路径)。
+
+## 本机部署记录(2026-08-17,示例)
 
 | 组件 | 状态 |
 |---|---|
-| Miloco 后端 v2026.8.6 | ✅ 已安装在 WSL Ubuntu 26.04,`/home/<用户>/.miloco`,服务运行于 127.0.0.1:1810 |
+| Miloco 后端 v2026.8.6 | ✅ 已安装在 WSL Ubuntu,`/home/<用户>/.miloco`,服务运行于 127.0.0.1:1810 |
 | 安装方式 | `scripts/wsl-*.sh`(官方 install.sh 两阶段 agent 模式;bundle 经 gh-proxy.org 镜像 + SHA256 校验) |
 | Windows 环境变量 | ✅ `MILOCO_TOKEN`(User 级)= WSL `config.json` 的 `server.token` |
-| 米家账号 | ✅ 已绑定(nickname: Ephemeral,38 台设备 / 9 个场景 / 2 台摄像头) |
+| 米家账号 | ✅ 已绑定(38 台设备 / 9 个场景 / 2 台摄像头) |
 | Omni 模型(MiMo) | ⬜ 未配置(需 API Key,感知暂用内置模型) |
-| DSH web profile | ⬜ 需重启 `dsh web` 使 MCP 工具生效 |
 
 **常用命令(WSL 内,注意必须带 `MILOCO_HOME`,否则 CLI 会找错目录):**
 
@@ -83,27 +120,11 @@ miloco-cli account bind          # 交互式绑定账号(也可用 MCP 工具)
 miloco-cli dashboard             # 打开家庭面板
 ```
 
-Windows 重启后 WSL 服务不会自启,在 PowerShell 执行(或直接用 `scripts\wsl-restart-miloco.sh`):
+Windows 重启后 WSL 服务不会自启,在 PowerShell 执行:
 
 ```powershell
-wsl -d Ubuntu -- bash "/mnt/c/Project Library/DeepSeek Harness WorkSpace/miloco-dsh/scripts/wsl-restart-miloco.sh"
+wsl -d Ubuntu -- bash "/mnt/c/<路径>/miloco-dsh/scripts/wsl-restart-miloco.sh"
 ```
-
-## 配置
-
-`miloco-mcp` 通过环境变量配置(在 `cordis.patch.yml` 的 `env` 段):
-
-| 变量 | 默认 | 说明 |
-|---|---|---|
-| `MILOCO_BASE_URL` | `http://127.0.0.1:1810` | 后端地址;WSL 场景 localhost 自动转发,跨机改成 `http://<host>:1810` |
-| `MILOCO_TOKEN` | 自动发现 | 后端 Bearer token(见下) |
-| `MILOCO_HOME` | 依次探测 | config.json 所在目录(可指向 `\\wsl.localhost\<发行版>\home\<用户>\.miloco`) |
-| `MILOCO_TIMEOUT_MS` | `30000` | 单次 HTTP 超时 |
-
-**token 获取**(任一方式):
-1. 在 Windows 环境变量设置 `MILOCO_TOKEN` = 后端 `~/.miloco/config.json` 里的 `server.token`(本机已设置);
-2. 或不设置,由服务器自动从 `~/.miloco` / `~/.openclaw/miloco` / `~/.hermes/miloco` 的 `config.json` 发现;
-3. 或设置 `MILOCO_HOME` 指向实际配置目录(含 WSL 的 UNC 路径)。
 
 ## 安全注意事项
 
@@ -119,14 +140,17 @@ wsl -d Ubuntu -- bash "/mnt/c/Project Library/DeepSeek Harness WorkSpace/miloco-
 node server/test-mcp.js      # 协议冒烟(无需后端)
 node server/test-full.js     # 端到端(mock 后端,22 断言)
 node server/test-sdk.mjs     # 官方 SDK v1.30 兼容性
+node server/test-live.mjs    # 真后端实测(需运行中的 Miloco)
 ```
 
-## 回滚
+## 卸载
 
-若需卸载适配:
-1. 编辑 `$DSH_HOME/profiles/web/cordis.patch.yml`,删除 `mcp-miloco` 所在的 `- insert:` 块;
+1. 编辑 `$DSH_HOME/profiles/web/cordis.patch.yml`,删除
+   `# >>> miloco-dsh begin` 与 `# <<< miloco-dsh end` 之间的块(含标记行);
 2. 删除 `$DSH_HOME/skills/miloco/`;
-3. 重启 `dsh web`。
+3. 删除环境变量 `MILOCO_TOKEN`(如安装器写过);
+4. 重启 `dsh web`。
+
 不影响 Miloco 后端、不影响 my-coffee 等其它 MCP 实例。
 
 ## 已知边界(v1)

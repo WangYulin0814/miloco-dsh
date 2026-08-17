@@ -1,12 +1,23 @@
-# Miloco MCP 适配 — 追加到 $DSH_HOME/profiles/web/cordis.patch.yml 的 patch 列表末尾。
+# miloco-dsh — cordis.patch.yml 接入片段(参考模板)
+#
+# 推荐方式:直接运行一句话安装器,它会把下面这个「标记块」幂等合并进
+# $DSH_HOME/profiles/web/cordis.patch.yml(自动备份,自动替换 <MILOCO_DSH_DIR>)。
+#
+#   Windows:  irm https://raw.githubusercontent.com/WangYulin0814/miloco-dsh/main/install.ps1 | iex
+#   Linux/macOS: curl -fsSL https://raw.githubusercontent.com/WangYulin0814/miloco-dsh/main/install.sh | bash
+#
+# 手动接入:把下面的块追加到 $DSH_HOME/profiles/web/cordis.patch.yml 末尾,
+# 并把 <MILOCO_DSH_DIR> 换成本仓库 server/miloco-mcp.js 所在目录(反斜杠或正斜杠均可)。
 # 生效方式:重启 dsh web(重启后模型获得 mcp__miloco__* 工具)。
 #
 # 说明:
 # - MILOCO_BASE_URL:Miloco 后端地址。WSL 场景下 127.0.0.1 即可(WSL2 会把
 #   localhost 转发到发行版);后端在另一台机器时改成 http://<host>:1810。
-# - MILOCO_TOKEN:后端 Bearer token。推荐在 Windows 侧设置环境变量 MILOCO_TOKEN
-#   (从 WSL 内 ~/.miloco/config.json 的 server.token 取值);不设置时,miloco-mcp
-#   会尝试自动发现 config.json(可用 MILOCO_HOME 指向 \\wsl.localhost\<发行版>\home\<用户>\.miloco)。
+# - MILOCO_TOKEN:后端 Bearer token。推荐设置环境变量 MILOCO_TOKEN
+#   (取后端 ~/.miloco/config.json 的 server.token);不设置时,miloco-mcp
+#   会尝试自动发现 config.json(可用 MILOCO_HOME 指向配置目录)。
+
+# >>> miloco-dsh begin (由 miloco-dsh 安装脚本维护,请勿手动修改) >>>
 - insert:
     - id: mcp-miloco
       name: '@deepseek-ai/dsh-mcp-client'
@@ -15,8 +26,9 @@
         transport: stdio
         command: node
         args:
-          - 'C:\Project Library\DeepSeek Harness WorkSpace\miloco-dsh\server\miloco-mcp.js'
+          - '<MILOCO_DSH_DIR>/server/miloco-mcp.js'
         env:
-          MILOCO_BASE_URL: http://127.0.0.1:1810
+          MILOCO_BASE_URL: 'http://127.0.0.1:1810'
           MILOCO_TIMEOUT_MS: '30000'
           MILOCO_TOKEN: !!js process.env.MILOCO_TOKEN || ''
+# <<< miloco-dsh end <<<

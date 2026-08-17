@@ -77,9 +77,25 @@
 
 ## 6. DSH 接入方式(web profile)
 
-在 `$DSH_HOME/profiles/web/cordis.patch.yml` 的 patch 列表追加一行 `insert`:
+接入已封装为**一句话安装器**(幂等,写入前自动备份):
+
+```powershell
+# Windows
+irm https://raw.githubusercontent.com/WangYulin0814/miloco-dsh/main/install.ps1 | iex
+```
+
+```bash
+# Linux / macOS
+curl -fsSL https://raw.githubusercontent.com/WangYulin0814/miloco-dsh/main/install.sh | bash
+```
+
+安装器调用 `scripts/merge-patch.js` 把带标记的条目幂等合并进
+`$DSH_HOME/profiles/web/cordis.patch.yml`(标记块可原位升级;旧的未标记条目会自动
+原位迁移;写入前备份为 `*.bak-<时间戳>`),并安装 `skills/miloco/`、自动发现后端
+token、跑 `server/test-mcp.js` 冒烟验证。生成的条目形如:
 
 ```yaml
+# >>> miloco-dsh begin (由 miloco-dsh 安装脚本维护,请勿手动修改) >>>
 - insert:
     - id: mcp-miloco
       name: '@deepseek-ai/dsh-mcp-client'
@@ -87,12 +103,16 @@
         serverName: miloco
         transport: stdio
         command: node
-        args: ['<绝对路径>/miloco-dsh/server/miloco-mcp.js']
+        args:
+          - '<MILOCO_DSH_DIR>/server/miloco-mcp.js'
         env:
-          MILOCO_BASE_URL: http://127.0.0.1:1810
-          MILOCO_TOKEN: !!js process.env.MILOCO_TOKEN
+          MILOCO_BASE_URL: 'http://127.0.0.1:1810'
+          MILOCO_TIMEOUT_MS: '30000'
+          MILOCO_TOKEN: !!js process.env.MILOCO_TOKEN || ''
+# <<< miloco-dsh end <<<
 ```
 
+手动接入仍可参考 `dsh-integration/cordis.patch.miloco.yml`(同格式模板)。
 重启 `dsh web` 后,模型即获得 `mcp__miloco__*` 工具。另附 `skills/miloco/SKILL.md`,
 放进 `$DSH_HOME/skills/miloco/` 让 agent 掌握标准工作流(状态检查 → 设备发现 → 控制 → 事件复盘)。
 
