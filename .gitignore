@@ -1,0 +1,11 @@
+# 上传/归档时排除的文件
+# 上游 Xiaomi 仓库源码/安装器/安装包(版权归 Xiaomi,不随本仓库再分发;本地保留作参考)
+upstream/
+
+# 日志与临时文件
+*.log
+logs/
+
+# 本地 token 等敏感文件(如存在)
+*.token.local
+.miloco-token.local
