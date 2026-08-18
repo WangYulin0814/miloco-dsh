@@ -36,7 +36,7 @@ miloco-dsh/
 把下面这行发给你的 DSH Agent,它会按 `install-guide.md` 自动装好「Miloco 后端 + DSH 适配」:
 
 ```text
-帮我安装miloco-dsh：https://raw.githubusercontent.com/WangYulin0814/miloco-dsh/install-guide.md
+帮我安装miloco-dsh：https://raw.githubusercontent.com/WangYulin0814/miloco-dsh/main/install-guide.md
 ```
 
 ### 方式二:一句话安装适配层(需已有 Miloco 后端)

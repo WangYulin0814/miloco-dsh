@@ -15,7 +15,7 @@ DSH (agent) ──mcp__miloco__*──▶ @deepseek-ai/dsh-mcp-client ──stdi
 把下面这行发给你的 DSH Agent(DeepSeek Harness):
 
 ```text
-帮我安装miloco-dsh：https://raw.githubusercontent.com/WangYulin0814/miloco-dsh/install-guide.md
+帮我安装miloco-dsh：https://raw.githubusercontent.com/WangYulin0814/miloco-dsh/main/install-guide.md
 ```
 
 Agent 会读取安装指南并自动完成全套安装——即使这台电脑还没装 Miloco:
