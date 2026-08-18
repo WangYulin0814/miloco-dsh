@@ -8,10 +8,29 @@
 DSH (agent) ──mcp__miloco__*──▶ @deepseek-ai/dsh-mcp-client ──stdio──▶ miloco-mcp ──HTTP+Bearer──▶ Miloco 后端 (Linux/WSL)
 ```
 
-## 一句话安装
+## 安装
+
+### 方式一:通过 Agent 安装(推荐)
+
+把下面这行发给你的 DSH Agent(DeepSeek Harness):
+
+```text
+帮我安装miloco-dsh：https://raw.githubusercontent.com/WangYulin0814/miloco-dsh/install-guide.md
+```
+
+Agent 会读取安装指南并自动完成全套安装——即使这台电脑还没装 Miloco:
+
+1. 探测环境(平台 / WSL / 是否已有后端);
+2. 安装 **Miloco 后端**(官方 install.sh;Windows 装进 WSL,Linux/macOS 原生);
+3. 读取后端 token(打码处理);
+4. 安装 **miloco-dsh 适配层**(本仓库安装器);
+5. 验证(后端健康 + MCP 冒烟 18 工具);
+6. 提醒你重启 DSH 并引导首次配置(绑定米家账号等)。
+
+### 方式二:命令行一键安装(仅适配层;适合已有 Miloco 后端)
 
 > 前提:已安装 [DeepSeek Harness](https://github.com/deepseek-ai/dsh)(自带 node);
-> Miloco 后端已跑在 `127.0.0.1:1810`(本机 Linux/WSL,安装见下文)。
+> Miloco 后端已跑在 `127.0.0.1:1810`(本机 Linux/WSL)。
 
 **Windows(PowerShell 5.1+ 或 PowerShell 7):**
 
